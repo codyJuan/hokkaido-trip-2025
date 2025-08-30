@@ -1,0 +1,10 @@
+{
+  "id": "makkari-riverside-park",
+  "nameEn": "Makkari Riverside Park",
+  "nameZh": "真狩川公園",
+  "tags": ["park", "nature", "view"],
+  "rating": 4.2,
+  "blurb": "真狩村的小公園，可以欣賞羊蹄山的全景。",
+  "order": 60,
+  "mapUrl": "https://maps.google.com/?q=Makkari+Riverside+Park"
+}
