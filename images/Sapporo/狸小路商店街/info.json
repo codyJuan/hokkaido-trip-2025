@@ -1,0 +1,10 @@
+{
+  "id": "tanukikoji-shopping-street",
+  "nameEn": "Tanukikoji Shopping Street",
+  "nameZh": "狸小路商店街",
+  "tags": ["shopping", "street", "food"],
+  "rating": 4.3,
+  "blurb": "札幌最熱鬧的商店街之一，全長約1公里，聚集各式餐廳、伴手禮與藥妝店，觀光客必訪。",
+  "order": 30,
+  "mapUrl": "https://maps.app.goo.gl/DBbo4zxDjzwmvDrJ9"
+}
