@@ -1,0 +1,10 @@
+{
+  "id": "mt-yotei",
+  "nameEn": "Mt. Yotei",
+  "nameZh": "羊蹄山",
+  "tags": ["mountain", "hiking", "view"],
+  "rating": 4.7,
+  "blurb": "有北海道富士之稱的名山，山形優美，是登山健行與攝影聖地。",
+  "order": 40,
+  "mapUrl": "https://maps.google.com/?q=Mt.+Yotei"
+}

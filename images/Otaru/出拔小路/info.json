@@ -1,0 +1,11 @@
+{
+  "id": "debuku-alley",
+  "nameEn": "Debuku Alley",
+  "nameZh": "出拔小路",
+  "tags": ["alley", "shopping", "street"],
+  "rating": 4.0,
+  "blurb": "小樽的特色小路，聚集許多餐廳與小店，適合散步與覓食。",
+  "order": 2,
+  "address": "小樽市色內1丁目",
+  "mapUrl": "https://maps.google.com/?q=Otaru+Debuku+Alley"
+}

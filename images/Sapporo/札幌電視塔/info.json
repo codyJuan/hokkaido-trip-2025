@@ -1,0 +1,10 @@
+{
+  "id": "sapporo-tv-tower",
+  "nameEn": "Sapporo TV Tower",
+  "nameZh": "札幌電視塔",
+  "tags": ["landmark", "tower", "nightview"],
+  "rating": 4.3,
+  "blurb": "位於大通公園東端的電視塔，可俯瞰札幌市區景色。",
+  "order": 20,
+  "mapUrl": "https://maps.google.com/?q=Sapporo+TV+Tower"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "mt-usu",
+  "nameEn": "Mt. Usu",
+  "nameZh": "有珠山",
+  "tags": ["mountain", "volcano", "view"],
+  "rating": 4.5,
+  "blurb": "活火山景點，可搭乘有珠山纜車俯瞰洞爺湖與昭和新山。",
+  "order": 40,
+  "mapUrl": "https://maps.google.com/?q=Mt.+Usu"
+}

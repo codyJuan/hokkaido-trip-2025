@@ -1,0 +1,10 @@
+{
+  "id": "hokkaido-shrine",
+  "nameEn": "Hokkaido Shrine",
+  "nameZh": "北海道神宮",
+  "tags": ["shrine", "culture", "nature"],
+  "rating": 4.6,
+  "blurb": "札幌市內的重要神社，櫻花與梅花季節尤為熱鬧。",
+  "order": 40,
+  "mapUrl": "https://maps.google.com/?q=Hokkaido+Shrine"
+}

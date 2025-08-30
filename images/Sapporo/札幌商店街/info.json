@@ -1,0 +1,10 @@
+{
+  "id": "sapporo-shopping-street",
+  "nameEn": "Sapporo Shopping Street",
+  "nameZh": "札幌商店街",
+  "tags": ["shopping", "street", "food"],
+  "rating": 4.3,
+  "blurb": "札幌熱鬧的商店街區，匯集美食與購物，觀光客必訪。",
+  "order": 30,
+  "mapUrl": "https://maps.google.com/?q=Sapporo+Shopping+Street"
+}

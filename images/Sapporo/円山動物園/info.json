@@ -1,0 +1,10 @@
+{
+  "id": "maruyama-zoo",
+  "nameEn": "Maruyama Zoo",
+  "nameZh": "円山動物園",
+  "tags": ["zoo", "family", "animals"],
+  "rating": 4.2,
+  "order": 30,
+  "blurb": "札幌市立動物園，擁有北極熊等寒帶動物，適合親子同遊。",
+  "mapUrl": "https://maps.google.com/?q=Maruyama+Zoo"
+}

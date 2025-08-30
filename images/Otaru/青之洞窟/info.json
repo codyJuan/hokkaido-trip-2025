@@ -1,0 +1,10 @@
+{
+  "id": "blue-cave",
+  "nameEn": "Blue Cave",
+  "nameZh": "青之洞窟",
+  "tags": ["cruise", "nature", "sea"],
+  "rating": 4.9,
+  "blurb": "搭船遊覽小樽海岸的秘境景點，海水呈現夢幻藍色光影。",
+  "order": 3,
+  "mapUrl": "https://maps.google.com/?q=Otaru+Blue+Cave"
+}
