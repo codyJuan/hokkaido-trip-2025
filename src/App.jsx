@@ -42,10 +42,29 @@ export default function App() {
       </header>
 
       {/* Hero */}
-      <section className="container-slim py-10 sm:py-12">
-        <h1 className="text-3xl sm:text-4xl font-bold text-center">Hokkaido Trip 2025</h1>
-        <p className="text-center text-gray-500 mt-2">Toya ・ Otaru ・ Sapporo</p>
-      </section>
+{/* Hero */}
+<section className="container-slim py-10 sm:py-12">
+  <div className="mx-auto max-w-3xl text-center">
+    {/* Minimal date line – no background */}
+    <div className="inline-flex items-baseline gap-3 text-gray-500">
+      <span className="font-serif uppercase tracking-[0.18em] text-xs sm:text-sm">
+        May&nbsp;31
+      </span>
+      <span className="text-gray-400">—</span>
+      <span className="font-serif uppercase tracking-[0.18em] text-xs sm:text-sm">
+        Jun&nbsp;7
+      </span>
+      <span className="text-gray-400">·</span>
+      <span className="font-mono text-xs sm:text-sm">2025</span>
+    </div>
+    <div className="mx-auto mt-2 h-px w-10 bg-gray-300/70"></div>
+
+    <h1 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight">
+      Hokkaido Trip
+    </h1>
+    <p className="mt-2 text-gray-500">Toya ・ Otaru ・ Sapporo</p>
+  </div>
+</section>
 
       <main className="container-slim pb-16">
         <div id="toya">
