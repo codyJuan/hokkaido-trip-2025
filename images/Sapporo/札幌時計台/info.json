@@ -1,0 +1,10 @@
+{
+  "id": "sapporo-clock-tower",
+  "nameEn": "Sapporo Clock Tower",
+  "nameZh": "札幌時計台",
+  "tags": ["landmark", "history", "architecture"],
+  "rating": 4.0,
+  "blurb": "札幌地標之一，歷史悠久的木造鐘樓建築。",
+  "order": 50,
+  "mapUrl": "https://maps.google.com/?q=Sapporo+Clock+Tower"
+}
