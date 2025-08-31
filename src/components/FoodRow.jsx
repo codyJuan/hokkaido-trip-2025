@@ -57,6 +57,7 @@ function resolveAsset(url) {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
   return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
 }
+
 function FoodCard({ item, mode = "grid" }) {
   const images = useMemo(
     () =>
@@ -113,16 +114,28 @@ function FoodCard({ item, mode = "grid" }) {
 
       {/* 文字內容 */}
       <div className="p-3">
-        <div className="flex items-center gap-2 font-semibold truncate">
-          <span>{item.title || "Untitled"}</span>
+        {/* 標題：可換行、最多兩行；📍 只圖標可點 */}
+        <div className="flex items-start gap-1">
+          <h3
+            className="
+              flex-1 font-semibold text-base leading-tight
+              whitespace-normal break-words line-clamp-2
+              min-h-[2.75rem]
+            "
+            title={item.title}
+          >
+            {item.title || "Untitled"}
+          </h3>
+
           {item.mapUrl && (
             <a
               href={item.mapUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800"
+              className="shrink-0 ml-1 text-blue-600 hover:text-blue-800 translate-y-[1px]"
               aria-label="Open in Google Maps"
-              onClick={(e) => e.stopPropagation()} // 防止觸發卡片其他事件
+              onClick={(e) => e.stopPropagation()}
+              title="Open in Google Maps"
             >
               📍
             </a>
