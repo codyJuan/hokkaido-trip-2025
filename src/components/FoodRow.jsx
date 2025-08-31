@@ -5,7 +5,7 @@ export default function FoodRow({
   title = "Food Highlights",
   subtitle = "",
   items = [],
-  expandAll = true, // 預設一次展開全部；要橫向列就傳 false
+  expandAll = true,
 }) {
   const rowRef = useRef(null);
   const scroll = (dx) => rowRef.current?.scrollBy({ left: dx, behavior: "smooth" });
@@ -27,7 +27,6 @@ export default function FoodRow({
       </div>
 
       {expandAll ? (
-        /* === 展開全部：自適應網格，避免 iPad 黏在一起 === */
         <div
           className="
             grid gap-5
@@ -41,7 +40,6 @@ export default function FoodRow({
           {items.map((it) => <FoodCard key={it.id} item={it} mode="grid" />)}
         </div>
       ) : (
-        /* === 原本橫向模式 === */
         <div ref={rowRef} className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-1">
           {items.map((it) => <FoodCard key={it.id} item={it} mode="row" />)}
         </div>
@@ -50,7 +48,6 @@ export default function FoodRow({
   );
 }
 
-/* GitHub Pages base-path 處理 */
 function resolveAsset(url) {
   if (!url) return url;
   if (url.startsWith("http")) return url;
@@ -114,33 +111,29 @@ function FoodCard({ item, mode = "grid" }) {
 
       {/* 文字內容 */}
       <div className="p-3">
-        {/* 標題：可換行、最多兩行；📍 只圖標可點 */}
-        <div className="flex items-start gap-1">
-          <h3
-            className="
-              flex-1 font-semibold text-base leading-tight
-              whitespace-normal break-words line-clamp-2
-              min-h-[2.75rem]
-            "
-            title={item.title}
-          >
-            {item.title || "Untitled"}
-          </h3>
-
+        {/* 標題 + 📍緊貼 */}
+        <h3
+          className="
+            font-semibold text-base leading-tight
+            whitespace-normal break-words line-clamp-2 min-h-[2.75rem]
+            sm:line-clamp-1 sm:truncate sm:whitespace-nowrap sm:break-normal sm:min-h-0
+          "
+          title={item.title}
+        >
+          {item.title || "Untitled"}
           {item.mapUrl && (
             <a
               href={item.mapUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 ml-1 text-blue-600 hover:text-blue-800 translate-y-[1px]"
+              className="inline-block ml-0.5 text-blue-600 hover:text-blue-800"
               aria-label="Open in Google Maps"
               onClick={(e) => e.stopPropagation()}
-              title="Open in Google Maps"
             >
               📍
             </a>
           )}
-        </div>
+        </h3>
 
         {item.note && (
           <div className="text-sm text-gray-600 line-clamp-2 mt-1">{item.note}</div>
