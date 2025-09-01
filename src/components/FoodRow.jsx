@@ -1,11 +1,12 @@
 // src/components/FoodRow.jsx
 import { useMemo, useRef, useState } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
 export default function FoodRow({
   title = "Food Highlights",
   subtitle = "",
   items = [],
-  expandAll = true,
+  expandAll = true, // 預設一次展開全部；要橫向列就傳 false
 }) {
   const rowRef = useRef(null);
   const scroll = (dx) => rowRef.current?.scrollBy({ left: dx, behavior: "smooth" });
@@ -27,10 +28,11 @@ export default function FoodRow({
       </div>
 
       {expandAll ? (
+        /* === 手機：1 欄滿版；≥sm：自適應網格 === */
         <div
           className="
             grid gap-5
-            grid-cols-[repeat(auto-fill,minmax(160px,1fr))]
+            grid-cols-1
             sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]
             md:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]
             lg:grid-cols-[repeat(auto-fill,minmax(240px,1fr))]
@@ -40,6 +42,7 @@ export default function FoodRow({
           {items.map((it) => <FoodCard key={it.id} item={it} mode="grid" />)}
         </div>
       ) : (
+        /* === 原本橫向模式 === */
         <div ref={rowRef} className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-1">
           {items.map((it) => <FoodCard key={it.id} item={it} mode="row" />)}
         </div>
@@ -48,6 +51,7 @@ export default function FoodRow({
   );
 }
 
+/* GitHub Pages base-path 處理 */
 function resolveAsset(url) {
   if (!url) return url;
   if (url.startsWith("http")) return url;
@@ -94,14 +98,20 @@ function FoodCard({ item, mode = "grid" }) {
           <>
             <button
               onClick={prev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg bg-white/90 border text-xs shadow"
+              className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center
+                         h-8 w-8 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
               aria-label="previous image"
-            >◀</button>
+            >
+              <ChevronLeftIcon className="h-5 w-5" />
+            </button>
             <button
               onClick={next}
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg bg-white/90 border text-xs shadow"
+              className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center
+                         h-8 w-8 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
               aria-label="next image"
-            >▶</button>
+            >
+              <ChevronRightIcon className="h-5 w-5" />
+            </button>
             <span className="absolute bottom-2 right-2 text-[11px] px-1.5 py-0.5 rounded-full bg-black/70 text-white">
               {idx + 1}/{images.length}
             </span>
@@ -111,12 +121,12 @@ function FoodCard({ item, mode = "grid" }) {
 
       {/* 文字內容 */}
       <div className="p-3">
-        {/* 標題 + 📍緊貼 */}
+        {/* 標題 + 📍緊貼；手機：單行；≥sm：仍單行（保持一致） */}
         <h3
           className="
             font-semibold text-base leading-tight
-            whitespace-normal break-words line-clamp-2 min-h-[2.75rem]
-            sm:line-clamp-1 sm:truncate sm:whitespace-nowrap sm:break-normal sm:min-h-0
+            truncate
+            sm:truncate
           "
           title={item.title}
         >

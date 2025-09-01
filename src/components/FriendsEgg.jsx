@@ -2,7 +2,7 @@ export default function FriendsEgg({ photos = [] }) {
   return (
     <section className="my-12">
       <h2 className="text-xl sm:text-2xl font-semibold mb-4">Friends’ Moments</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {photos.map((src, i) => (
           <img
             key={i}

@@ -1,5 +1,6 @@
 // src/components/HorizontalRow.jsx
 import { useRef, useState, useMemo, useEffect } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
 export default function HorizontalRow({ title, subtitle, items = [], onCardClick }) {
   const ref = useRef(null);
@@ -14,8 +15,20 @@ export default function HorizontalRow({ title, subtitle, items = [], onCardClick
           {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
         </div>
         <div className="hidden md:flex gap-2">
-          <button onClick={() => scroll(-520)} className="px-3 py-1 rounded-lg border">◀</button>
-          <button onClick={() => scroll(520)} className="px-3 py-1 rounded-lg border">▶</button>
+          <button
+            onClick={() => scroll(-520)}
+            className="h-9 w-9 rounded-full border flex items-center justify-center hover:bg-gray-50"
+            aria-label="scroll left"
+          >
+            <ChevronLeftIcon className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => scroll(520)}
+            className="h-9 w-9 rounded-full border flex items-center justify-center hover:bg-gray-50"
+            aria-label="scroll right"
+          >
+            <ChevronRightIcon className="h-5 w-5" />
+          </button>
         </div>
       </div>
 
@@ -88,17 +101,23 @@ function SpotCard({ item, onOpen }) {
 
         {images.length > 1 && (
           <>
-            {/* 左右切換：白色膠囊，簡潔不遮擋 */}
+            {/* 左右切換：圓形半透明按鈕（Heroicons） */}
             <button
               onClick={prev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg bg-white/95 border text-xs shadow"
+              className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center
+                         h-9 w-9 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
               aria-label="previous image"
-            >◀</button>
+            >
+              <ChevronLeftIcon className="h-5 w-5" />
+            </button>
             <button
               onClick={next}
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg bg-white/95 border text-xs shadow"
+              className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center
+                         h-9 w-9 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
               aria-label="next image"
-            >▶</button>
+            >
+              <ChevronRightIcon className="h-5 w-5" />
+            </button>
 
             {/* 底部圓點指示 */}
             <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
