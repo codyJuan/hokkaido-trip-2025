@@ -7,8 +7,8 @@ export default function Modal({ open, onClose, item }) {
     return Array.isArray(item.images) && item.images.length
       ? item.images
       : item.image
-      ? [item.image]
-      : [];
+        ? [item.image]
+        : [];
   }, [item]);
 
   const [idx, setIdx] = useState(0);
@@ -50,12 +50,13 @@ export default function Modal({ open, onClose, item }) {
 
           {images.length > 1 && (
             <>
+              {/* 左右切換 */}
               <button
                 onClick={prev}
                 className="absolute left-3 top-1/2 -translate-y-1/2
-                           flex items-center justify-center
-                           h-9 w-9 rounded-full bg-black/40 text-white
-                           hover:bg-black/60 transition"
+                   flex items-center justify-center
+                   h-9 w-9 rounded-full bg-black/40 text-white
+                   hover:bg-black/60 transition"
                 aria-label="Previous"
               >
                 <ChevronLeftIcon className="h-5 w-5" />
@@ -63,13 +64,24 @@ export default function Modal({ open, onClose, item }) {
               <button
                 onClick={next}
                 className="absolute right-3 top-1/2 -translate-y-1/2
-                           flex items-center justify-center
-                           h-9 w-9 rounded-full bg-black/40 text-white
-                           hover:bg-black/60 transition"
+                   flex items-center justify-center
+                   h-9 w-9 rounded-full bg-black/40 text-white
+                   hover:bg-black/60 transition"
                 aria-label="Next"
               >
                 <ChevronRightIcon className="h-5 w-5" />
               </button>
+
+              {/* 底部圓點指示器 */}
+              <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                {images.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`h-2 w-2 rounded-full transition ${i === idx ? "bg-white" : "bg-white/50"
+                      }`}
+                  />
+                ))}
+              </div>
             </>
           )}
         </div>
@@ -115,9 +127,8 @@ export default function Modal({ open, onClose, item }) {
                 <button
                   key={i}
                   onClick={() => setIdx(i)}
-                  className={`h-16 w-24 rounded-lg overflow-hidden border ${
-                    i === idx ? "ring-2 ring-black" : ""
-                  }`}
+                  className={`h-16 w-24 rounded-lg overflow-hidden border ${i === idx ? "ring-2 ring-black" : ""
+                    }`}
                   aria-label={`thumbnail ${i + 1}`}
                 >
                   <img src={src} className="h-full w-full object-cover" alt="" />
