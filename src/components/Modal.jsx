@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
 export default function Modal({ open, onClose, item }) {
   const images = useMemo(() => {
     if (!item) return [];
-    return (Array.isArray(item.images) && item.images.length
+    return Array.isArray(item.images) && item.images.length
       ? item.images
       : item.image
       ? [item.image]
-      : []
-    );
+      : [];
   }, [item]);
 
   const [idx, setIdx] = useState(0);
@@ -37,7 +37,7 @@ export default function Modal({ open, onClose, item }) {
         className="w-full max-w-3xl bg-white rounded-2xl overflow-hidden shadow-xl max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 圖片：等比例縮放、不裁切、置中顯示；高度跟視窗連動 */}
+        {/* 圖片區 */}
         <div className="relative flex items-center justify-center bg-black/5">
           {images.length > 0 && (
             <img
@@ -52,24 +52,30 @@ export default function Modal({ open, onClose, item }) {
             <>
               <button
                 onClick={prev}
-                className="absolute left-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-white/80 border"
+                className="absolute left-3 top-1/2 -translate-y-1/2
+                           flex items-center justify-center
+                           h-9 w-9 rounded-full bg-black/40 text-white
+                           hover:bg-black/60 transition"
                 aria-label="Previous"
               >
-                ◀
+                <ChevronLeftIcon className="h-5 w-5" />
               </button>
               <button
                 onClick={next}
-                className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-white/80 border"
+                className="absolute right-3 top-1/2 -translate-y-1/2
+                           flex items-center justify-center
+                           h-9 w-9 rounded-full bg-black/40 text-white
+                           hover:bg-black/60 transition"
                 aria-label="Next"
               >
-                ▶
+                <ChevronRightIcon className="h-5 w-5" />
               </button>
             </>
           )}
         </div>
 
+        {/* 文字區 */}
         <div className="p-4 overflow-y-auto">
-          {/* 名稱 + Google Maps 連結（帶📍icon） */}
           <h3 className="text-xl font-semibold">
             {item.mapUrl ? (
               <a
@@ -109,7 +115,9 @@ export default function Modal({ open, onClose, item }) {
                 <button
                   key={i}
                   onClick={() => setIdx(i)}
-                  className={`h-16 w-24 rounded-lg overflow-hidden border ${i === idx ? "ring-2 ring-black" : ""}`}
+                  className={`h-16 w-24 rounded-lg overflow-hidden border ${
+                    i === idx ? "ring-2 ring-black" : ""
+                  }`}
                   aria-label={`thumbnail ${i + 1}`}
                 >
                   <img src={src} className="h-full w-full object-cover" alt="" />
@@ -119,7 +127,10 @@ export default function Modal({ open, onClose, item }) {
           )}
 
           <div className="mt-4 flex justify-end">
-            <button onClick={onClose} className="px-4 py-2 rounded-lg border hover:bg-gray-50">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border hover:bg-gray-50"
+            >
               Close
             </button>
           </div>
