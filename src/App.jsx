@@ -69,7 +69,7 @@ export default function App() {
         <div id="toya">
           <HorizontalRow
             title="Toya"
-            subtitle="洞爺湖"
+            subtitle="洞爺"
             items={toyaSpots}
             onCardClick={onCardClick}
           />
