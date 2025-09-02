@@ -18,7 +18,6 @@ const WIDTH_CANDIDATES = [400, 800, 1600];
 const DEFAULT_SIZES = "(max-width: 768px) 100vw, 50vw";
 
 /* ========= helpers ========= */
-
 function ensureDir(p) {
   const dir = path.dirname(p);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -143,6 +142,7 @@ function scanCity(cityRoot, cityWebBase) {
       tags: [],
       rating: null,
       blurb: "",
+      order: null,
       images,
       imagesMeta,
     };
@@ -171,12 +171,20 @@ function scanCity(cityRoot, cityWebBase) {
       tags: [],
       rating: null,
       blurb: "",
+      order: null,
       images: [meta.fallback],
       imagesMeta: [meta],
     });
   }
 
-  result.spots.sort((a,b)=>a.nameZh.localeCompare(b.nameZh));
+  // === 排序：先 order（小的在前），再字典序 ===
+  result.spots.sort((a, b) => {
+    if (a.order != null && b.order != null) return a.order - b.order;
+    if (a.order != null) return -1;
+    if (b.order != null) return 1;
+    return a.nameZh.localeCompare(b.nameZh);
+  });
+
   return result;
 }
 
@@ -187,24 +195,26 @@ function scanFood(foodRoot, foodWebBase) {
   for (const ent of listDir(foodRoot)) {
     if (!ent.isDirectory()) continue;
 
-    const folder = ent.name;
-    const dirAbs = path.join(foodRoot, folder);
+    const folder  = ent.name;
+    const dirAbs  = path.join(foodRoot, folder);
     const webBase = webJoin(foodWebBase, folder);
 
     const { images, imagesMeta } = buildImageListWithMeta(dirAbs, webBase);
     if (!images.length) continue;
 
-    const infoPath = path.join(dirAbs, "info.json");
     let base = {
       id: slugify(folder),
       title: titleize(folder),
       note: "",
       rating: null,
       tags: [],
+      order: null,
       images,
       imagesMeta,
     };
 
+    // info.json（可含 title/note/rating/tags/order/mapUrl/cover 等）
+    const infoPath = path.join(dirAbs, "info.json");
     if (fs.existsSync(infoPath)) {
       try {
         const info = JSON.parse(fs.readFileSync(infoPath, "utf8"));
@@ -215,7 +225,14 @@ function scanFood(foodRoot, foodWebBase) {
     foods.push(base);
   }
 
-  foods.sort((a,b)=>(a.title||"").localeCompare(b.title||""));
+  // === 排序：先 order（小的在前），再字典序 ===
+  foods.sort((a, b) => {
+    if (a.order != null && b.order != null) return a.order - b.order;
+    if (a.order != null) return -1;
+    if (b.order != null) return 1;
+    return (a.title || "").localeCompare(b.title || "");
+  });
+
   return foods;
 }
 
@@ -251,7 +268,7 @@ function main() {
   const foodRoot  = path.join(INPUT_DIR, "food");
   const foodItems = scanFood(foodRoot, "./images/food");
 
-  // Gallery / Friends：輸出 images + imagesMeta
+  // Gallery / Friends：輸出 images + imagesMeta（此版用非底線資料夾）
   const { images: galleryImages, imagesMeta: galleryImagesMeta } =
     scanLooseSet(path.join(INPUT_DIR, "gallery"), "./images/gallery");
   const { images: friendsPhotos, imagesMeta: friendsPhotosMeta } =
