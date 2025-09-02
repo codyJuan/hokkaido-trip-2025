@@ -3,8 +3,6 @@ import HorizontalRow from "./components/HorizontalRow.jsx";
 import Modal from "./components/Modal.jsx";
 import CarouselGallery from "./components/CarouselGallery.jsx";
 import FriendsEgg from "./components/FriendsEgg.jsx";
-import FoodMasonry from "./components/FoodMasonry.jsx";
-import FoodShowcase from "./components/FoodShowcase.jsx";
 import FoodRow from "./components/FoodRow.jsx";
 
 import {
@@ -13,7 +11,9 @@ import {
   sapporoSpots,
   foodItems,
   galleryImages,
-  friendsPhotos
+  galleryImagesMeta,   
+  friendsPhotos,
+  friendsPhotosMeta   
 } from "./data.js";
 
 export default function App() {
@@ -115,11 +115,11 @@ export default function App() {
 
         {/* Gallery */}
         <div id="gallery">
-          <CarouselGallery images={galleryImages} />
+          <CarouselGallery images={galleryImages} imagesMeta={galleryImagesMeta} />
         </div>
 
         {/* Friends */}
-        <FriendsEgg photos={friendsPhotos} />
+        <FriendsEgg photos={friendsPhotos} photosMeta={friendsPhotosMeta} />
       </main>
 
       {/* Modal */}

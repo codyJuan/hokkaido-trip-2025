@@ -1,19 +1,33 @@
+// src/components/Modal.jsx
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import ImageSmart from "./ImageSmart.jsx";
+
+/* GitHub Pages base-path 處理（fallback 用） */
+function resolveAsset(url) {
+  if (!url) return url;
+  if (url.startsWith("http")) return url;
+  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
+}
 
 export default function Modal({ open, onClose, item }) {
+  // 原始圖片與 meta（gen-data.js 會產）
   const images = useMemo(() => {
     if (!item) return [];
     return Array.isArray(item.images) && item.images.length
       ? item.images
-      : item.image
-        ? [item.image]
-        : [];
+      : item?.image
+      ? [item.image]
+      : [];
   }, [item]);
+
+  const imagesMeta = Array.isArray(item?.imagesMeta) ? item.imagesMeta : [];
 
   const [idx, setIdx] = useState(0);
   useEffect(() => setIdx(0), [item]);
 
+  // ESC 關閉
   useEffect(() => {
     if (!open) return;
     const onEsc = (e) => e.key === "Escape" && onClose?.();
@@ -37,15 +51,25 @@ export default function Modal({ open, onClose, item }) {
         className="w-full max-w-3xl bg-white rounded-2xl overflow-hidden shadow-xl max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 圖片區 */}
+        {/* 圖片區：contain，不裁切；按鈕 + 圓點 */}
         <div className="relative flex items-center justify-center bg-black/5">
           {images.length > 0 && (
-            <img
-              src={images[idx]}
-              alt={item.nameEn || ""}
-              className="block mx-auto w-auto max-w-full h-auto max-h-[66vh] md:max-h-[70vh] object-contain select-none"
-              draggable="false"
-            />
+            <div className="block mx-auto w-auto max-w-full h-auto max-h-[66vh] md:max-h-[70vh]">
+              {imagesMeta[idx] ? (
+                <ImageSmart
+                  meta={imagesMeta[idx]}
+                  alt={item.nameEn || item.nameZh || ""}
+                  className="w-auto max-w-full h-auto max-h-[66vh] md:max-h-[70vh] object-contain select-none"
+                />
+              ) : (
+                <img
+                  src={resolveAsset(images[idx])}
+                  alt={item.nameEn || ""}
+                  className="w-auto max-w-full h-auto max-h-[66vh] md:max-h-[70vh] object-contain select-none"
+                  draggable="false"
+                />
+              )}
+            </div>
           )}
 
           {images.length > 1 && (
@@ -54,9 +78,9 @@ export default function Modal({ open, onClose, item }) {
               <button
                 onClick={prev}
                 className="absolute left-3 top-1/2 -translate-y-1/2
-                   flex items-center justify-center
-                   h-9 w-9 rounded-full bg-black/40 text-white
-                   hover:bg-black/60 transition"
+                           flex items-center justify-center
+                           h-9 w-9 rounded-full bg-black/40 text-white
+                           hover:bg-black/60 transition"
                 aria-label="Previous"
               >
                 <ChevronLeftIcon className="h-5 w-5" />
@@ -64,9 +88,9 @@ export default function Modal({ open, onClose, item }) {
               <button
                 onClick={next}
                 className="absolute right-3 top-1/2 -translate-y-1/2
-                   flex items-center justify-center
-                   h-9 w-9 rounded-full bg-black/40 text-white
-                   hover:bg-black/60 transition"
+                           flex items-center justify-center
+                           h-9 w-9 rounded-full bg-black/40 text-white
+                           hover:bg-black/60 transition"
                 aria-label="Next"
               >
                 <ChevronRightIcon className="h-5 w-5" />
@@ -75,10 +99,13 @@ export default function Modal({ open, onClose, item }) {
               {/* 底部圓點指示器 */}
               <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
                 {images.map((_, i) => (
-                  <span
+                  <button
                     key={i}
-                    className={`h-2 w-2 rounded-full transition ${i === idx ? "bg-white" : "bg-white/50"
-                      }`}
+                    onClick={() => setIdx(i)}
+                    className={`h-2 w-2 rounded-full transition ${
+                      i === idx ? "bg-white" : "bg-white/50"
+                    }`}
+                    aria-label={`Go to image ${i + 1}`}
                   />
                 ))}
               </div>
@@ -95,6 +122,7 @@ export default function Modal({ open, onClose, item }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                title="Open in Google Maps"
               >
                 <span aria-hidden>📍</span>
                 <span>{item.nameEn}</span>
@@ -123,17 +151,35 @@ export default function Modal({ open, onClose, item }) {
           {/* 縮圖列 */}
           {images.length > 1 && (
             <div className="mt-4 flex gap-2 overflow-x-auto hide-scrollbar">
-              {images.map((src, i) => (
-                <button
-                  key={i}
-                  onClick={() => setIdx(i)}
-                  className={`h-16 w-24 rounded-lg overflow-hidden border ${i === idx ? "ring-2 ring-black" : ""
+              {images.map((src, i) => {
+                const meta = imagesMeta[i];
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setIdx(i)}
+                    className={`h-16 w-24 rounded-lg overflow-hidden border ${
+                      i === idx ? "ring-2 ring-black" : ""
                     }`}
-                  aria-label={`thumbnail ${i + 1}`}
-                >
-                  <img src={src} className="h-full w-full object-cover" alt="" />
-                </button>
-              ))}
+                    aria-label={`thumbnail ${i + 1}`}
+                    title={`Image ${i + 1}`}
+                  >
+                    {meta ? (
+                      <ImageSmart
+                        meta={meta}
+                        alt=""
+                        className="h-full w-full object-cover object-center"
+                      />
+                    ) : (
+                      <img
+                        src={resolveAsset(src)}
+                        className="h-full w-full object-cover object-center"
+                        alt=""
+                        loading="lazy"
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
 

@@ -1,6 +1,15 @@
 // src/components/FoodRow.jsx
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import ImageSmart from "./ImageSmart.jsx";
+
+/* GitHub Pages base-path 處理（fallback 用） */
+function resolveAsset(url) {
+  if (!url) return url;
+  if (url.startsWith("http")) return url;
+  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
+}
 
 export default function FoodRow({
   title = "Food Highlights",
@@ -51,22 +60,9 @@ export default function FoodRow({
   );
 }
 
-/* GitHub Pages base-path 處理 */
-function resolveAsset(url) {
-  if (!url) return url;
-  if (url.startsWith("http")) return url;
-  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
-}
-
 function FoodCard({ item, mode = "grid" }) {
-  const images = useMemo(
-    () =>
-      Array.isArray(item.images) && item.images.length
-        ? item.images
-        : [item.image].filter(Boolean),
-    [item.images, item.image]
-  );
+  const images = Array.isArray(item.images) ? item.images : (item.image ? [item.image] : []);
+  const imagesMeta = Array.isArray(item.imagesMeta) ? item.imagesMeta : [];
 
   const [idx, setIdx] = useState(0);
   const prev = (e) => { e.stopPropagation(); setIdx((i) => (i - 1 + images.length) % images.length); };
@@ -81,17 +77,23 @@ function FoodCard({ item, mode = "grid" }) {
     <article
       className={`${sizeClass} rounded-2xl overflow-hidden border bg-white shadow-card hover:shadow-md transition`}
     >
-      {/* 封面 */}
+      {/* 封面：1:1；優先用 imagesMeta，無則 fallback 到 <img> */}
       <div className="relative">
         <div className="aspect-square bg-gray-100">
-          {images[idx] && (
+          {imagesMeta[idx] ? (
+            <ImageSmart
+              meta={imagesMeta[idx]}
+              alt={item.title || ""}
+              className="w-full h-full object-cover object-center"
+            />
+          ) : images[idx] ? (
             <img
               src={resolveAsset(images[idx])}
               alt={item.title || ""}
               className="w-full h-full object-cover object-center"
               loading="lazy"
             />
-          )}
+          ) : null}
         </div>
 
         {images.length > 1 && (
@@ -121,13 +123,9 @@ function FoodCard({ item, mode = "grid" }) {
 
       {/* 文字內容 */}
       <div className="p-3">
-        {/* 標題 + 📍緊貼；手機：單行；≥sm：仍單行（保持一致） */}
+        {/* 標題：手機單行 truncate；📍緊貼在標題後、可點 map */}
         <h3
-          className="
-            font-semibold text-base leading-tight
-            truncate
-            sm:truncate
-          "
+          className="font-semibold text-base leading-tight truncate"
           title={item.title}
         >
           {item.title || "Untitled"}
@@ -139,6 +137,7 @@ function FoodCard({ item, mode = "grid" }) {
               className="inline-block ml-0.5 text-blue-600 hover:text-blue-800"
               aria-label="Open in Google Maps"
               onClick={(e) => e.stopPropagation()}
+              title="Open in Google Maps"
             >
               📍
             </a>

@@ -1,13 +1,18 @@
-export default function FriendsEgg({ photos = [] }) {
+// src/components/FriendsEgg.jsx
+import ImageSmart from "./ImageSmart";
+
+export default function FriendsEgg({ photos = [], photosMeta = [] }) {
   return (
     <section className="my-12">
       <h2 className="text-xl sm:text-2xl font-semibold mb-4">Friends’ Moments</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {photos.map((src, i) => (
-          <img
+          <ImageSmart
             key={i}
             src={src}
-            className="aspect-square object-cover rounded-2xl shadow-card"
+            meta={photosMeta?.[i]}
+            alt={`Friends photo ${i + 1}`}
+            className="aspect-square object-cover rounded-2xl shadow-card w-full h-full"
           />
         ))}
       </div>

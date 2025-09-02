@@ -1,6 +1,8 @@
+// src/components/CarouselGallery.jsx
 import { useRef } from "react";
+import ImageSmart from "./ImageSmart";
 
-export default function CarouselGallery({ images = [] }) {
+export default function CarouselGallery({ images = [], imagesMeta = [] }) {
   const ref = useRef(null);
   const next = () => shift(1);
   const prev = () => shift(-1);
@@ -24,11 +26,21 @@ export default function CarouselGallery({ images = [] }) {
 
       <div ref={ref} className="hide-scrollbar flex overflow-x-auto gap-4 scroll-smooth">
         {images.map((src, i) => (
-          <img
+          <div
             key={i}
-            src={src}
-            className="w-[85vw] sm:w-[70vw] md:w-[50vw] lg:w-[40vw] h-64 sm:h-72 md:h-80 object-cover rounded-2xl shadow-card"
-          />
+            className="
+              relative flex-shrink-0 overflow-hidden rounded-2xl shadow-card bg-gray-100
+              w-[85vw] sm:w-[70vw] md:w-[50vw] lg:w-[40vw]
+              aspect-[4/3]   /* 改用固定比例 */
+            "
+          >
+            <ImageSmart
+              src={src}
+              meta={imagesMeta?.[i]}
+              alt={`Gallery image ${i + 1}`}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </div>
         ))}
       </div>
     </section>

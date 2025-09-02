@@ -1,36 +1,39 @@
 // scripts/gen-data.js
-// 用法：node scripts/gen-data.js [inputDir] [outFile]
-// 範例：node scripts/gen-data.js public/images src/data.js
+// 用法：node scripts/gen-data.js public/images src/data.js
 
 const fs = require("fs");
 const path = require("path");
 
 const CITY_META = {
-  Toya:    { en: "Toya",  zh: "洞爺湖" },
-  Otaru:   { en: "Otaru", zh: "小樽"   },
-  Sapporo: { en: "Sapporo", zh: "札幌" }
+  Toya:    { en: "Toya",    zh: "洞爺湖" },
+  Otaru:   { en: "Otaru",   zh: "小樽"   },
+  Sapporo: { en: "Sapporo", zh: "札幌"   },
 };
 
 const INPUT_DIR   = path.resolve(process.cwd(), process.argv[2] || "images");
 const OUTPUT_FILE = path.resolve(process.cwd(), process.argv[3] || "src/data.js");
-const IMAGE_RE = /\.(jpe?g|png|webp|avif)$/i;
 
-// ---------- helpers ----------
+const IMAGE_RE = /\.(jpe?g|png|webp|avif)$/i;
+const WIDTH_CANDIDATES = [400, 800, 1600];
+const DEFAULT_SIZES = "(max-width: 768px) 100vw, 50vw";
+
+/* ========= helpers ========= */
+
 function ensureDir(p) {
   const dir = path.dirname(p);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
-
+function listDir(abs) {
+  return fs.existsSync(abs) ? fs.readdirSync(abs, { withFileTypes: true }) : [];
+}
 function hasCJK(s) {
   return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(s);
 }
-
 function titleize(name) {
   const base = name.replace(/\.[a-z0-9]+$/i, "");
   if (hasCJK(base)) return base;
   return base.replace(/[_-]+/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 }
-
 function slugify(s) {
   const base = s.normalize("NFKC").replace(/\.[a-z0-9]+$/i, "").trim();
   return base
@@ -40,180 +43,193 @@ function slugify(s) {
     .replace(/^-|-$/g, "")
     .toLowerCase();
 }
-
-function listDir(abs) {
-  return fs.existsSync(abs) ? fs.readdirSync(abs, { withFileTypes: true }) : [];
+function webJoin(...parts) {
+  return path.posix.join(...parts);
 }
 
-function readImagesOnce(dirAbs, webBase) {
-  return listDir(dirAbs)
-    .filter((ent) => ent.isFile() && IMAGE_RE.test(ent.name))
-    .map((ent) => path.posix.join(webBase, ent.name))
-    .sort();
+/** cover-800.jpg → cover；cover.jpg → cover */
+function canonicalStem(filename) {
+  const { name } = path.parse(filename);
+  const m = name.match(/^(.*?)-(\d{2,5})$/);
+  return m ? m[1] : name;
 }
-
-function readJSON(fileAbs) {
-  try {
-    if (fs.existsSync(fileAbs)) {
-      const raw = fs.readFileSync(fileAbs, "utf8");
-      return JSON.parse(raw);
+/** 列出資料夾內「不重複的 stem」 */
+function listCanonicalStems(dirAbs) {
+  const stems = new Set();
+  for (const ent of listDir(dirAbs)) {
+    if (ent.isFile() && IMAGE_RE.test(ent.name)) {
+      stems.add(canonicalStem(ent.name));
     }
-  } catch (e) {
-    console.warn(`[gen-data] invalid JSON: ${fileAbs}\n${e.message}`);
   }
-  return null;
+  return Array.from(stems).sort();
 }
 
-function toWebPath(rootWebBase, fname) {
-  return path.posix.join(rootWebBase, fname);
-}
+/** 依 stem 彙整變體（多尺寸/多格式） */
+function collectVariantsByStem(dirAbs, webBase, stem) {
+  const found = { avif: [], webp: [], jpeg: [] };
 
-function sortByOrderThenName(a, b) {
-  const ao = a.order ?? 999999;
-  const bo = b.order ?? 999999;
-  if (ao !== bo) return ao - bo;
-  return (a.nameZh || a.title || "").localeCompare(b.nameZh || b.title || "");
-}
-
-// ---------- scan one city (spots only, with info.json) ----------
-function scanCity(cityRoot, cityWebBase) {
-  const spots = [];
-
-  for (const ent of listDir(cityRoot)) {
-    if (!ent.isDirectory()) continue;
-    const spotDirAbs = path.join(cityRoot, ent.name);
-    const webBase = path.posix.join(cityWebBase, ent.name);
-
-    // 讀 info.json（可選）
-    const info = readJSON(path.join(spotDirAbs, "info.json")) || {};
-
-    // 圖片：若 info.images 指定則依序輸出；否則全讀資料夾
-    let images = [];
-    if (Array.isArray(info.images) && info.images.length) {
-      images = info.images
-        .filter((f) => IMAGE_RE.test(f))
-        .map((f) => toWebPath(webBase, f));
-    } else {
-      images = readImagesOnce(spotDirAbs, webBase);
-    }
-    if (!images.length) continue;
-
-    // 若指定 cover，移到第一張
-    if (info.cover) {
-      const coverPath = toWebPath(webBase, info.cover);
-      const idx = images.indexOf(coverPath);
-      if (idx > 0) {
-        images.splice(idx, 1);
-        images.unshift(coverPath);
+  // 切片：stem-400/800/1600.*
+  for (const w of WIDTH_CANDIDATES) {
+    for (const fmt of ["avif", "webp", "jpg", "jpeg", "png"]) {
+      const filename = `${stem}-${w}.${fmt === "jpg" ? "jpg" : fmt}`;
+      const abs = path.join(dirAbs, filename);
+      if (fs.existsSync(abs) && fs.statSync(abs).isFile()) {
+        const bucket = fmt === "avif" ? "avif" : fmt === "webp" ? "webp" : "jpeg";
+        found[bucket].push({ src: webJoin(webBase, filename), w });
       }
     }
-
-    const fallbackName = titleize(ent.name);
-    const nameEn = info.nameEn || (hasCJK(fallbackName) ? fallbackName : fallbackName);
-    const nameZh = info.nameZh || fallbackName;
-
-    spots.push({
-      id: info.id || slugify(nameEn || nameZh || ent.name),
-      nameEn,
-      nameZh,
-      tags: Array.isArray(info.tags) ? info.tags : [],
-      rating: info.rating ?? null,
-      blurb: info.blurb || "",
-      order: info.order ?? undefined,
-      images,
-
-      // 其餘可用的擴充欄位都一併輸出（前端可選擇要不要用）
-      coords: info.coords ?? undefined,
-      address: info.address ?? undefined,
-      mapUrl: info.mapUrl ?? undefined,
-      timeSpent: info.timeSpent ?? undefined,
-      ticket: info.ticket ?? undefined
-    });
   }
 
-  // root loose images（沒子資料夾、但直接丟圖片在城市根目錄）
+  // 原檔（stem.avif/webp/jpg/png）
+  for (const fmt of ["avif", "webp", "jpg", "jpeg", "png"]) {
+    const filename = `${stem}.${fmt === "jpg" ? "jpg" : fmt}`;
+    const abs = path.join(dirAbs, filename);
+    if (fs.existsSync(abs) && fs.statSync(abs).isFile()) {
+      const bucket = fmt === "avif" ? "avif" : fmt === "webp" ? "webp" : "jpeg";
+      if (!found[bucket].some(x => x.src.endsWith(filename))) {
+        found[bucket].push({ src: webJoin(webBase, filename) });
+      }
+    }
+  }
+
+  // <img src> fallback：優先有 w 的最大；否則任何
+  const pickFallback = (arr) =>
+    arr.length ? arr.slice().sort((a,b)=>(b.w||0)-(a.w||0))[0].src : null;
+
+  let fallback =
+    pickFallback(found.jpeg) ||
+    pickFallback(found.webp) ||
+    pickFallback(found.avif) ||
+    (found.jpeg[0]?.src || found.webp[0]?.src || found.avif[0]?.src);
+
+  if (!fallback) fallback = webJoin(webBase, `${stem}.jpg`);
+
+  return { fallback, sources: found, sizes: DEFAULT_SIZES };
+}
+
+/** 以「stem 為單位」建立 images & imagesMeta */
+function buildImageListWithMeta(dirAbs, webBase) {
+  const stems = listCanonicalStems(dirAbs);
+  const images = [];
+  const imagesMeta = [];
+  for (const stem of stems) {
+    const meta = collectVariantsByStem(dirAbs, webBase, stem);
+    images.push(meta.fallback);
+    imagesMeta.push(meta);
+  }
+  return { images, imagesMeta };
+}
+
+/* ========= 景點 ========= */
+function scanCity(cityRoot, cityWebBase) {
+  const result = { spots: [] };
+
+  // 子資料夾 = 一個景點
   for (const ent of listDir(cityRoot)) {
-    if (!(ent.isFile && ent.isFile())) continue;
-    if (!IMAGE_RE.test(ent.name)) continue;
-    const url = path.posix.join(cityWebBase, ent.name);
-    const name = titleize(ent.name);
-    spots.push({
-      id: slugify(name),
-      nameEn: hasCJK(name) ? name : name,
-      nameZh: name,
+    if (!ent.isDirectory()) continue;
+
+    const spotDirAbs = path.join(cityRoot, ent.name);
+    const webBase    = webJoin(cityWebBase, ent.name);
+    const nameZh     = titleize(ent.name);
+    const id         = slugify(nameZh);
+
+    const { images, imagesMeta } = buildImageListWithMeta(spotDirAbs, webBase);
+    if (!images.length) continue;
+
+    let spot = {
+      id,
+      nameEn: hasCJK(nameZh) ? nameZh : nameZh,
+      nameZh,
       tags: [],
       rating: null,
       blurb: "",
-      images: [url]
+      images,
+      imagesMeta,
+    };
+
+    // info.json
+    const metaPath = path.join(spotDirAbs, "info.json");
+    if (fs.existsSync(metaPath)) {
+      try {
+        const info = JSON.parse(fs.readFileSync(metaPath, "utf8"));
+        spot = { ...spot, ...info, images, imagesMeta };
+      } catch {}
+    }
+
+    result.spots.push(spot);
+  }
+
+  // 根目錄散圖 → 每個 stem 當一個景點
+  const stems = listCanonicalStems(cityRoot);
+  for (const stem of stems) {
+    const meta = collectVariantsByStem(cityRoot, cityWebBase, stem);
+    const nameZh = titleize(stem);
+    result.spots.push({
+      id: slugify(nameZh),
+      nameEn: hasCJK(nameZh) ? nameZh : nameZh,
+      nameZh,
+      tags: [],
+      rating: null,
+      blurb: "",
+      images: [meta.fallback],
+      imagesMeta: [meta],
     });
   }
 
-  spots.sort(sortByOrderThenName);
-  return { spots };
+  result.spots.sort((a,b)=>a.nameZh.localeCompare(b.nameZh));
+  return result;
 }
 
-// ---------- scan food (global) with info.json ----------
+/* ========= 食物 ========= */
 function scanFood(foodRoot, foodWebBase) {
   const foods = [];
 
   for (const ent of listDir(foodRoot)) {
     if (!ent.isDirectory()) continue;
 
-    const folderName = ent.name;
-    const dirAbs = path.join(foodRoot, folderName);
-    const webBase = path.posix.join(foodWebBase, folderName);
+    const folder = ent.name;
+    const dirAbs = path.join(foodRoot, folder);
+    const webBase = webJoin(foodWebBase, folder);
 
-    const info = readJSON(path.join(dirAbs, "info.json")) || {};
-
-    let images = [];
-    if (Array.isArray(info.images) && info.images.length) {
-      images = info.images
-        .filter((f) => IMAGE_RE.test(f))
-        .map((f) => toWebPath(webBase, f));
-    } else {
-      images = readImagesOnce(dirAbs, webBase);
-    }
+    const { images, imagesMeta } = buildImageListWithMeta(dirAbs, webBase);
     if (!images.length) continue;
 
-    if (info.cover) {
-      const coverPath = toWebPath(webBase, info.cover);
-      const idx = images.indexOf(coverPath);
-      if (idx > 0) {
-        images.splice(idx, 1);
-        images.unshift(coverPath);
-      }
+    const infoPath = path.join(dirAbs, "info.json");
+    let base = {
+      id: slugify(folder),
+      title: titleize(folder),
+      note: "",
+      rating: null,
+      tags: [],
+      images,
+      imagesMeta,
+    };
+
+    if (fs.existsSync(infoPath)) {
+      try {
+        const info = JSON.parse(fs.readFileSync(infoPath, "utf8"));
+        base = { ...base, ...info, images, imagesMeta };
+      } catch {}
     }
 
-    foods.push({
-      id: info.id || slugify(folderName),
-      title: info.title || titleize(folderName),
-      note: info.note || "",
-      rating: info.rating ?? 2,
-      tags: Array.isArray(info.tags) ? info.tags : [],
-      images,
-      mapUrl: info.mapUrl ?? undefined,
-      price: info.price ?? undefined,
-      visitedAt: info.visitedAt ?? undefined
-    });
+    foods.push(base);
   }
 
-  foods.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+  foods.sort((a,b)=>(a.title||"").localeCompare(b.title||""));
   return foods;
 }
 
-// ---------- scan extra folders (gallery/friends) ----------
-function scanLooseFolder(dirAbs, webBase) {
-  if (!fs.existsSync(dirAbs) || !fs.statSync(dirAbs).isDirectory()) return [];
-  return fs
-    .readdirSync(dirAbs)
-    .filter((f) => IMAGE_RE.test(f))
-    .sort()
-    .map((f) => path.posix.join(webBase, f));
+/* ========= Gallery / Friends（也提供 Meta） ========= */
+function scanLooseSet(dirAbs, webBase) {
+  if (!fs.existsSync(dirAbs) || !fs.statSync(dirAbs).isDirectory()) {
+    return { images: [], imagesMeta: [] };
+  }
+  return buildImageListWithMeta(dirAbs, webBase);
 }
 
-// ---------- main ----------
+/* ========= main ========= */
 function main() {
-  console.log(`[gen-data] INPUT_DIR  = ${INPUT_DIR}`);
+  console.log(`[gen-data] INPUT_DIR = ${INPUT_DIR}`);
   console.log(`[gen-data] OUTPUT_FILE = ${OUTPUT_FILE}`);
 
   const cityDirs = listDir(INPUT_DIR).filter(
@@ -222,33 +238,38 @@ function main() {
 
   const perCity = {};
   for (const ent of cityDirs) {
-    const cityKey = ent.name;
-    const cityRoot = path.join(INPUT_DIR, cityKey);
+    const cityKey     = ent.name;
+    const cityRoot    = path.join(INPUT_DIR, cityKey);
     const cityWebBase = `./images/${ent.name}`;
-    perCity[cityKey] = scanCity(cityRoot, cityWebBase);
+    perCity[cityKey]  = scanCity(cityRoot, cityWebBase);
   }
 
   const toya    = perCity.Toya    || { spots: [] };
   const otaru   = perCity.Otaru   || { spots: [] };
   const sapporo = perCity.Sapporo || { spots: [] };
 
-  const foodRoot = path.join(INPUT_DIR, "food");
+  const foodRoot  = path.join(INPUT_DIR, "food");
   const foodItems = scanFood(foodRoot, "./images/food");
 
-  const galleryImages = scanLooseFolder(path.join(INPUT_DIR, "gallery"), "./images/gallery");
-  const friendsPhotos = scanLooseFolder(path.join(INPUT_DIR, "friends"), "./images/friends");
+  // Gallery / Friends：輸出 images + imagesMeta
+  const { images: galleryImages, imagesMeta: galleryImagesMeta } =
+    scanLooseSet(path.join(INPUT_DIR, "gallery"), "./images/gallery");
+  const { images: friendsPhotos, imagesMeta: friendsPhotosMeta } =
+    scanLooseSet(path.join(INPUT_DIR, "friends"), "./images/friends");
 
   const output = `/* Auto-generated by gen-data.js at ${new Date().toISOString()} */
 export const CITY_META = ${JSON.stringify(CITY_META, null, 2)};
 
-export const toyaSpots = ${JSON.stringify(toya.spots, null, 2)};
-export const otaruSpots = ${JSON.stringify(otaru.spots, null, 2)};
+export const toyaSpots    = ${JSON.stringify(toya.spots, null, 2)};
+export const otaruSpots   = ${JSON.stringify(otaru.spots, null, 2)};
 export const sapporoSpots = ${JSON.stringify(sapporo.spots, null, 2)};
 
-export const foodItems = ${JSON.stringify(foodItems, null, 2)};
+export const foodItems    = ${JSON.stringify(foodItems, null, 2)};
 
-export const galleryImages = ${JSON.stringify(galleryImages, null, 2)};
-export const friendsPhotos = ${JSON.stringify(friendsPhotos, null, 2)};
+export const galleryImages     = ${JSON.stringify(galleryImages, null, 2)};
+export const galleryImagesMeta = ${JSON.stringify(galleryImagesMeta, null, 2)};
+export const friendsPhotos     = ${JSON.stringify(friendsPhotos, null, 2)};
+export const friendsPhotosMeta = ${JSON.stringify(friendsPhotosMeta, null, 2)};
 `;
 
   ensureDir(OUTPUT_FILE);

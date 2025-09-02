@@ -8,7 +8,7 @@ export default function HorizontalRow({ title, subtitle, items = [], onCardClick
 
   return (
     <section className="my-12">
-      {/* 標題區：簡潔對齊 */}
+      {/* 標題區 */}
       <div className="flex items-end justify-between mb-3">
         <div>
           <h2 className="text-xl sm:text-2xl font-semibold">{title}</h2>
@@ -32,7 +32,7 @@ export default function HorizontalRow({ title, subtitle, items = [], onCardClick
         </div>
       </div>
 
-      {/* 列本體：桌機加大間距 */}
+      {/* 列本體 */}
       <div
         ref={ref}
         className="hide-scrollbar flex gap-4 sm:gap-5 lg:gap-6 overflow-x-auto scroll-smooth pb-1"
@@ -54,9 +54,10 @@ function resolveAsset(url) {
 }
 
 function SpotCard({ item, onOpen }) {
-  // 優先 images，其次 image
   const images = useMemo(() => {
-    const arr = Array.isArray(item.images) && item.images.length ? item.images : [item.image].filter(Boolean);
+    const arr = Array.isArray(item.images) && item.images.length
+      ? item.images
+      : [item.image].filter(Boolean);
     return arr.map(resolveAsset);
   }, [item.images, item.image]);
 
@@ -65,7 +66,7 @@ function SpotCard({ item, onOpen }) {
   const prev = (e) => { e.stopPropagation(); setIdx((i) => (i - 1 + images.length) % images.length); };
   const next = (e) => { e.stopPropagation(); setIdx((i) => (i + 1) % images.length); };
 
-  // 鍵盤左右鍵支援（聚焦在卡片時）
+  // 鍵盤左右鍵支援
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "ArrowLeft") prev(e);
@@ -78,14 +79,13 @@ function SpotCard({ item, onOpen }) {
   return (
     <article
       className={[
-        // 手機/平板正常；桌機放大，和 Food 卡尺寸接近
         "min-w-[240px] sm:min-w-[280px]",
         "lg:min-w-[360px] xl:min-w-[420px] 2xl:min-w-[480px]",
         "max-w-[560px] w-full rounded-2xl overflow-hidden border bg-white",
         "shadow-card hover:shadow-md transition"
       ].join(" ")}
     >
-      {/* 嚴格 4:3 封面，保持裁切中心 */}
+      {/* 4:3 封面 */}
       <div className="relative select-none">
         <div className="aspect-[4/3] bg-gray-100">
           {images[idx] && (
@@ -101,7 +101,7 @@ function SpotCard({ item, onOpen }) {
 
         {images.length > 1 && (
           <>
-            {/* 左右切換：圓形半透明按鈕（Heroicons） */}
+            {/* Heroicons 左右切換 */}
             <button
               onClick={prev}
               className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center
@@ -119,7 +119,7 @@ function SpotCard({ item, onOpen }) {
               <ChevronRightIcon className="h-5 w-5" />
             </button>
 
-            {/* 底部圓點指示 */}
+            {/* 底部圓點 */}
             <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
               {images.map((_, i) => (
                 <span
@@ -132,7 +132,7 @@ function SpotCard({ item, onOpen }) {
         )}
       </div>
 
-      {/* 文字區：桌機字級提升，內距一致 */}
+      {/* 文字區 */}
       <button onClick={onOpen} className="block w-full text-left p-3 lg:p-4 hover:bg-gray-50">
         <h3 className="font-semibold text-base lg:text-lg truncate">
           {item.nameEn || item.nameZh || "Untitled"}
