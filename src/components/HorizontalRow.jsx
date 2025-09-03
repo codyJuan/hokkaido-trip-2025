@@ -1,6 +1,7 @@
 // src/components/HorizontalRow.jsx
 import { useRef, useState, useMemo, useEffect } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import ImageSmart from "./ImageSmart";
 
 export default function HorizontalRow({ title, subtitle, items = [], onCardClick }) {
   const ref = useRef(null);
@@ -53,18 +54,46 @@ function resolveAsset(url) {
   return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
 }
 
+/* 將 data.js 的 imagesMeta 裡的 src 也一併補上 base-path */
+function resolveMeta(meta) {
+  if (!meta) return undefined;
+  const mapBucket = (arr = []) => arr.map((x) => ({ ...x, src: resolveAsset(x.src) }));
+  return {
+    ...meta,
+    fallback: resolveAsset(meta.fallback),
+    sources: {
+      avif: mapBucket(meta.sources?.avif),
+      webp: mapBucket(meta.sources?.webp),
+      jpeg: mapBucket(meta.sources?.jpeg),
+    },
+  };
+}
+
 function SpotCard({ item, onOpen }) {
+  // 取出圖片與對應的 meta（都做 base-path 修正）
   const images = useMemo(() => {
-    const arr = Array.isArray(item.images) && item.images.length
-      ? item.images
-      : [item.image].filter(Boolean);
+    const arr =
+      Array.isArray(item.images) && item.images.length
+        ? item.images
+        : [item.image].filter(Boolean);
     return arr.map(resolveAsset);
   }, [item.images, item.image]);
 
+  const metas = useMemo(() => {
+    const arr = Array.isArray(item.imagesMeta) ? item.imagesMeta : [];
+    return arr.map(resolveMeta);
+  }, [item.imagesMeta]);
+
   const [idx, setIdx] = useState(0);
 
-  const prev = (e) => { e.stopPropagation(); setIdx((i) => (i - 1 + images.length) % images.length); };
-  const next = (e) => { e.stopPropagation(); setIdx((i) => (i + 1) % images.length); };
+  const prev = (e) => {
+    e.stopPropagation();
+    setIdx((i) => (i - 1 + images.length) % images.length);
+  };
+  const next = (e) => {
+    e.stopPropagation();
+    setIdx((i) => (i + 1) % images.length);
+  };
 
   // 鍵盤左右鍵支援
   useEffect(() => {
@@ -74,7 +103,8 @@ function SpotCard({ item, onOpen }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [images.length]);
 
   return (
     <article
@@ -82,18 +112,18 @@ function SpotCard({ item, onOpen }) {
         "min-w-[240px] sm:min-w-[280px]",
         "lg:min-w-[360px] xl:min-w-[420px] 2xl:min-w-[480px]",
         "max-w-[560px] w-full rounded-2xl overflow-hidden border bg-white",
-        "shadow-card hover:shadow-md transition"
+        "shadow-card hover:shadow-md transition",
       ].join(" ")}
     >
-      {/* 4:3 封面 */}
+      {/* 4:3 封面（用 ImageSmart 走 srcset） */}
       <div className="relative select-none">
         <div className="aspect-[4/3] bg-gray-100">
           {images[idx] && (
-            <img
+            <ImageSmart
               src={images[idx]}
+              meta={metas[idx]}
               alt={item.nameEn || item.nameZh || ""}
               className="w-full h-full object-cover object-center"
-              draggable="false"
               onClick={onOpen}
             />
           )}
@@ -142,7 +172,9 @@ function SpotCard({ item, onOpen }) {
         {!!(item.tags && item.tags.length) && (
           <div className="mt-2 flex flex-wrap gap-1">
             {item.tags.map((t) => (
-              <span key={t} className="text-xs px-2 py-0.5 rounded-full border">{t}</span>
+              <span key={t} className="text-xs px-2 py-0.5 rounded-full border">
+                {t}
+              </span>
             ))}
           </div>
         )}

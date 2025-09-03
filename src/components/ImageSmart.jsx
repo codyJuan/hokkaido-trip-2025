@@ -1,31 +1,41 @@
 // src/components/ImageSmart.jsx
+// 用 <picture> + <source> 自動在 AVIF/WEBP/JPEG 之間選擇，並用 sizes/srcset 做寬度選擇。
+// 注意：只把「有 w 的條目」放入 srcset；無 w 的原檔只當 <img src> 的 fallback。
+
 export default function ImageSmart({
-  meta,        // 由 gen-data 產出的 { fallback, sources:{avif,webp,jpeg}, sizes }
+  src,          // 傳統單一網址（後備）
+  meta,         // { fallback, sizes, sources: { avif:[{src,w?}], webp:[...], jpeg:[...] } }
   alt = "",
   className = "",
-  loading = "lazy",
+  priority = false, // 首屏關鍵圖可以設 true
 }) {
-  if (!meta || !meta.fallback) {
-    return <img alt={alt} className={className} loading={loading} />;
-  }
+  const sizes = meta?.sizes || "(max-width: 768px) 100vw, 50vw";
 
-  // 將 [{src, w}] 轉成 "url 400w, url 800w"
-  const toSrcSet = (arr = []) =>
-    arr
-      .filter(Boolean)
-      .map((o) => (o.w ? `${o.src} ${o.w}w` : `${o.src}`))
+  const makeSrcSet = (list = []) =>
+    list
+      .filter((x) => x && x.src && Number.isFinite(x.w)) // 只接受有 w 的 candidate
+      .map((x) => `${x.src} ${x.w}w`)
       .join(", ");
 
-  const avif = toSrcSet(meta.sources?.avif);
-  const webp = toSrcSet(meta.sources?.webp);
-  const jpeg = toSrcSet(meta.sources?.jpeg);
+  const avifSet = makeSrcSet(meta?.sources?.avif);
+  const webpSet = makeSrcSet(meta?.sources?.webp);
+  const jpegSet = makeSrcSet(meta?.sources?.jpeg);
+
+  const imgSrc = meta?.fallback || src;
 
   return (
     <picture>
-      {avif && <source srcSet={avif} type="image/avif" sizes={meta.sizes} />}
-      {webp && <source srcSet={webp} type="image/webp" sizes={meta.sizes} />}
-      {jpeg && <source srcSet={jpeg} type="image/jpeg" sizes={meta.sizes} />}
-      <img src={meta.fallback} alt={alt} className={className} loading={loading} />
+      {avifSet && <source type="image/avif" srcSet={avifSet} sizes={sizes} />}
+      {webpSet && <source type="image/webp" srcSet={webpSet} sizes={sizes} />}
+      {jpegSet && <source type="image/jpeg" srcSet={jpegSet} sizes={sizes} />}
+      <img
+        src={imgSrc}
+        alt={alt}
+        className={className}
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
+        fetchpriority={priority ? "high" : "auto"}   // 改小寫
+      />
     </picture>
   );
 }
