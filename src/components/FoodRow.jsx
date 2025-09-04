@@ -1,6 +1,8 @@
 // src/components/FoodRow.jsx
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import { useKeenSlider } from "keen-slider/react";
+import "keen-slider/keen-slider.min.css";
 import ImageSmart from "./ImageSmart.jsx";
 
 /* GitHub Pages base-path 處理（fallback 用） */
@@ -9,6 +11,21 @@ function resolveAsset(url) {
   if (url.startsWith("http")) return url;
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
   return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
+}
+
+/* 把 imagesMeta 裡的 src 也補上 base-path（給 ImageSmart 用） */
+function resolveMeta(meta) {
+  if (!meta) return undefined;
+  const mapBucket = (arr = []) => arr.map((x) => ({ ...x, src: resolveAsset(x.src) }));
+  return {
+    ...meta,
+    fallback: resolveAsset(meta.fallback),
+    sources: {
+      avif: mapBucket(meta.sources?.avif),
+      webp: mapBucket(meta.sources?.webp),
+      jpeg: mapBucket(meta.sources?.jpeg),
+    },
+  };
 }
 
 export default function FoodRow({
@@ -61,73 +78,100 @@ export default function FoodRow({
 }
 
 function FoodCard({ item, mode = "grid" }) {
-  const images = Array.isArray(item.images) ? item.images : (item.image ? [item.image] : []);
-  const imagesMeta = Array.isArray(item.imagesMeta) ? item.imagesMeta : [];
+  const images = useMemo(
+    () => (Array.isArray(item.images) ? item.images : item.image ? [item.image] : []).map(resolveAsset),
+    [item.images, item.image]
+  );
+  const metas = useMemo(
+    () => (Array.isArray(item.imagesMeta) ? item.imagesMeta : []).map(resolveMeta),
+    [item.imagesMeta]
+  );
 
-  const [idx, setIdx] = useState(0);
-  const prev = (e) => { e.stopPropagation(); setIdx((i) => (i - 1 + images.length) % images.length); };
-  const next = (e) => { e.stopPropagation(); setIdx((i) => (i + 1) % images.length); };
+  const [current, setCurrent] = useState(0);
+
+  const [sliderRef, slider] = useKeenSlider({
+    loop: true,
+    initial: 0,
+    slideChanged(s) {
+      setCurrent(s.track.details.rel);
+    },
+  });
 
   const sizeClass =
     mode === "row"
       ? "min-w-[220px] sm:min-w-[240px] md:min-w-[260px] max-w-[280px]"
       : "w-full";
 
+  const hasMulti = images.length > 1;
+
   return (
     <article
       className={`${sizeClass} rounded-2xl overflow-hidden border bg-white shadow-card hover:shadow-md transition`}
     >
-      {/* 封面：1:1；優先用 imagesMeta，無則 fallback 到 <img> */}
+      {/* 封面：1:1，內用 Keen Slider；優先 ImageSmart，無 meta 則 fallback <img> */}
       <div className="relative">
         <div className="aspect-square bg-gray-100">
-          {imagesMeta[idx] ? (
-            <ImageSmart
-              meta={imagesMeta[idx]}
-              alt={item.title || ""}
-              className="w-full h-full object-cover object-center"
-            />
-          ) : images[idx] ? (
-            <img
-              src={resolveAsset(images[idx])}
-              alt={item.title || ""}
-              className="w-full h-full object-cover object-center"
-              loading="lazy"
-            />
-          ) : null}
+          <div ref={sliderRef} className="keen-slider h-full">
+            {images.map((src, i) => (
+              <div key={i} className="keen-slider__slide flex items-center justify-center">
+                <div className="relative w-full h-full">
+                  {metas[i] ? (
+                    <ImageSmart
+                      meta={metas[i]}
+                      alt={item.title || ""}
+                      className="absolute inset-0 w-full h-full object-cover object-center"
+                    />
+                  ) : (
+                    <img
+                      src={src}
+                      alt={item.title || ""}
+                      className="absolute inset-0 w-full h-full object-cover object-center"
+                      loading="lazy"
+                    />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {images.length > 1 && (
-          <>
-            <button
-              onClick={prev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center
-                         h-8 w-8 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
-              aria-label="previous image"
-            >
-              <ChevronLeftIcon className="h-5 w-5" />
-            </button>
-            <button
-              onClick={next}
-              className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center
-                         h-8 w-8 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
-              aria-label="next image"
-            >
-              <ChevronRightIcon className="h-5 w-5" />
-            </button>
-            <span className="absolute bottom-2 right-2 text-[11px] px-1.5 py-0.5 rounded-full bg-black/70 text-white">
-              {idx + 1}/{images.length}
-            </span>
-          </>
-        )}
+{hasMulti && (
+  <>
+    {/* 左右切換（Heroicons） */}
+    <button
+      onClick={() => slider.current?.prev()}
+      className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center
+                 h-8 w-8 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
+      aria-label="previous image"
+    >
+      <ChevronLeftIcon className="h-5 w-5" />
+    </button>
+    <button
+      onClick={() => slider.current?.next()}
+      className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center
+                 h-8 w-8 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
+      aria-label="next image"
+    >
+      <ChevronRightIcon className="h-5 w-5" />
+    </button>
+
+    {/* 右下角：目前第幾張 */}
+    <div
+      className="absolute right-2 bottom-2 rounded-full bg-black/60 text-white
+                 px-3 py-1 text-xs font-medium select-none"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {current + 1}/{images.length}
+    </div>
+  </>
+)}
       </div>
 
       {/* 文字內容 */}
       <div className="p-3">
         {/* 標題：手機單行 truncate；📍緊貼在標題後、可點 map */}
-        <h3
-          className="font-semibold text-base leading-tight truncate"
-          title={item.title}
-        >
+        <h3 className="font-semibold text-base leading-tight truncate" title={item.title}>
           {item.title || "Untitled"}
           {item.mapUrl && (
             <a
@@ -144,12 +188,8 @@ function FoodCard({ item, mode = "grid" }) {
           )}
         </h3>
 
-        {item.note && (
-          <div className="text-sm text-gray-600 line-clamp-2 mt-1">{item.note}</div>
-        )}
-        {item.rating != null && (
-          <div className="text-sm mt-2">⭐ {Number(item.rating).toFixed(1)}</div>
-        )}
+        {item.note && <div className="text-sm text-gray-600 line-clamp-2 mt-1">{item.note}</div>}
+        {item.rating != null && <div className="text-sm mt-2">⭐ {Number(item.rating).toFixed(1)}</div>}
       </div>
     </article>
   );

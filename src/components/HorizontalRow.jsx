@@ -1,7 +1,32 @@
 // src/components/HorizontalRow.jsx
-import { useRef, useState, useMemo, useEffect } from "react";
+import { useRef, useMemo, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import { useKeenSlider } from "keen-slider/react";
+import "keen-slider/keen-slider.min.css";
 import ImageSmart from "./ImageSmart";
+
+/* GitHub Pages base 路徑處理（給 fallback 用） */
+function resolveAsset(url) {
+  if (!url) return url;
+  if (url.startsWith("http")) return url;
+  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
+}
+
+/* 把 imagesMeta 裡的 src 也補上 base-path */
+function resolveMeta(meta) {
+  if (!meta) return undefined;
+  const mapBucket = (arr = []) => (arr || []).map((x) => ({ ...x, src: resolveAsset(x.src) }));
+  return {
+    ...meta,
+    fallback: resolveAsset(meta.fallback),
+    sources: {
+      avif: mapBucket(meta.sources?.avif),
+      webp: mapBucket(meta.sources?.webp),
+      jpeg: mapBucket(meta.sources?.jpeg),
+    },
+  };
+}
 
 export default function HorizontalRow({ title, subtitle, items = [], onCardClick }) {
   const ref = useRef(null);
@@ -46,36 +71,10 @@ export default function HorizontalRow({ title, subtitle, items = [], onCardClick
   );
 }
 
-/* GitHub Pages base 路徑處理 */
-function resolveAsset(url) {
-  if (!url) return url;
-  if (url.startsWith("http")) return url;
-  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
-}
-
-/* 將 data.js 的 imagesMeta 裡的 src 也一併補上 base-path */
-function resolveMeta(meta) {
-  if (!meta) return undefined;
-  const mapBucket = (arr = []) => arr.map((x) => ({ ...x, src: resolveAsset(x.src) }));
-  return {
-    ...meta,
-    fallback: resolveAsset(meta.fallback),
-    sources: {
-      avif: mapBucket(meta.sources?.avif),
-      webp: mapBucket(meta.sources?.webp),
-      jpeg: mapBucket(meta.sources?.jpeg),
-    },
-  };
-}
-
 function SpotCard({ item, onOpen }) {
-  // 取出圖片與對應的 meta（都做 base-path 修正）
+  // 圖片 & meta（處理 base-path）
   const images = useMemo(() => {
-    const arr =
-      Array.isArray(item.images) && item.images.length
-        ? item.images
-        : [item.image].filter(Boolean);
+    const arr = Array.isArray(item.images) && item.images.length ? item.images : [item.image].filter(Boolean);
     return arr.map(resolveAsset);
   }, [item.images, item.image]);
 
@@ -84,27 +83,22 @@ function SpotCard({ item, onOpen }) {
     return arr.map(resolveMeta);
   }, [item.imagesMeta]);
 
-  const [idx, setIdx] = useState(0);
+  const parsedMedia = images.map((src, i) => ({
+    type: "image",
+    src,
+    meta: metas[i],
+  }));
 
-  const prev = (e) => {
-    e.stopPropagation();
-    setIdx((i) => (i - 1 + images.length) % images.length);
-  };
-  const next = (e) => {
-    e.stopPropagation();
-    setIdx((i) => (i + 1) % images.length);
-  };
+  const hasMultiple = parsedMedia.length > 1;
+  const [current, setCurrent] = useState(0);
 
-  // 鍵盤左右鍵支援
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "ArrowLeft") prev(e);
-      if (e.key === "ArrowRight") next(e);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [images.length]);
+  const [sliderRef, instanceRef] = useKeenSlider({
+    loop: true,
+    slides: { perView: 1, spacing: 0 },
+    slideChanged(s) {
+      setCurrent(s.track.details.rel);
+    },
+  });
 
   return (
     <article
@@ -115,25 +109,37 @@ function SpotCard({ item, onOpen }) {
         "shadow-card hover:shadow-md transition",
       ].join(" ")}
     >
-      {/* 4:3 封面（用 ImageSmart 走 srcset） */}
+      {/* 4:3 封面區（keen-slider） */}
       <div className="relative select-none">
-        <div className="aspect-[4/3] bg-gray-100">
-          {images[idx] && (
-            <ImageSmart
-              src={images[idx]}
-              meta={metas[idx]}
-              alt={item.nameEn || item.nameZh || ""}
-              className="w-full h-full object-cover object-center"
-              onClick={onOpen}
-            />
-          )}
+        <div ref={sliderRef} className="keen-slider aspect-[4/3] bg-gray-100">
+          {parsedMedia.map((m, i) => (
+            <div key={i} className="keen-slider__slide">
+              {/* ImageSmart 會自動用 <picture/srcset>；沒有 meta 就 fallback <img> */}
+              {m.meta ? (
+                <ImageSmart
+                  meta={m.meta}
+                  alt={item.nameEn || item.nameZh || ""}
+                  className="w-full h-full object-cover object-center cursor-pointer"
+                  onClick={onOpen}
+                />
+              ) : (
+                <img
+                  src={m.src}
+                  alt={item.nameEn || item.nameZh || ""}
+                  className="w-full h-full object-cover object-center cursor-pointer"
+                  loading="lazy"
+                  onClick={onOpen}
+                />
+              )}
+            </div>
+          ))}
         </div>
 
-        {images.length > 1 && (
+        {hasMultiple && (
           <>
-            {/* Heroicons 左右切換 */}
+            {/* 左右切換 */}
             <button
-              onClick={prev}
+              onClick={(e) => { e.stopPropagation(); instanceRef.current?.prev(); }}
               className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center
                          h-9 w-9 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
               aria-label="previous image"
@@ -141,7 +147,7 @@ function SpotCard({ item, onOpen }) {
               <ChevronLeftIcon className="h-5 w-5" />
             </button>
             <button
-              onClick={next}
+              onClick={(e) => { e.stopPropagation(); instanceRef.current?.next(); }}
               className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center
                          h-9 w-9 rounded-full bg-black/40 text-white hover:bg-black/60 transition"
               aria-label="next image"
@@ -149,12 +155,14 @@ function SpotCard({ item, onOpen }) {
               <ChevronRightIcon className="h-5 w-5" />
             </button>
 
-            {/* 底部圓點 */}
+            {/* 圓點指示 */}
             <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
-              {images.map((_, i) => (
-                <span
+              {parsedMedia.map((_, i) => (
+                <button
                   key={i}
-                  className={`h-1.5 w-1.5 rounded-full ${i === idx ? "bg-white" : "bg-white/60"}`}
+                  onClick={(e) => { e.stopPropagation(); instanceRef.current?.moveToIdx(i); }}
+                  className={`h-1.5 w-1.5 rounded-full ${i === current ? "bg-white" : "bg-white/60"}`}
+                  aria-label={`Go to image ${i + 1}`}
                 />
               ))}
             </div>
@@ -172,9 +180,7 @@ function SpotCard({ item, onOpen }) {
         {!!(item.tags && item.tags.length) && (
           <div className="mt-2 flex flex-wrap gap-1">
             {item.tags.map((t) => (
-              <span key={t} className="text-xs px-2 py-0.5 rounded-full border">
-                {t}
-              </span>
+              <span key={t} className="text-xs px-2 py-0.5 rounded-full border">{t}</span>
             ))}
           </div>
         )}
